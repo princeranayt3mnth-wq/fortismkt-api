@@ -278,6 +278,16 @@ class PaymentMethodResponse(BaseModel):
     id: int
     payment_method: PaymentMethod
 
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def normalize_payment_method(cls, v):
+        if isinstance(v, str):
+            normalized = v.lower().replace(" ", "_")
+            # map legacy values
+            aliases = {"bank_transfer": "crypto"}
+            return aliases.get(normalized, normalized)
+        return v
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -334,6 +344,23 @@ class ListingResponse(BaseModel):
 
     payment_methods: list[PaymentMethodResponse]
     screenshots: list[ScreenshotResponse]
+
+    @field_validator("platform", mode="before")
+    @classmethod
+    def normalize_platform(cls, v):
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, v):
+        if isinstance(v, str):
+            normalized = v.lower()
+            # map legacy DB values to current enum values
+            aliases = {"active": "approved"}
+            return aliases.get(normalized, normalized)
+        return v
 
     model_config = ConfigDict(
         from_attributes=True

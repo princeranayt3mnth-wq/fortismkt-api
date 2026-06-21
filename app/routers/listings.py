@@ -196,7 +196,7 @@ def remove_saved_files(
 )
 async def submit_listing(
     # Basic details
-    platform: Platform = Form(...),
+    platform: str = Form(...),
     username: str | None = Form(None),
     account_url: str | None = Form(None),
 
@@ -241,7 +241,7 @@ async def submit_listing(
     is_flash_sale: bool = Form(False),
 
     # Payment methods and screenshots
-    payment_methods: list[PaymentMethod] | None = Form(
+    payment_methods: list[str] | None = Form(
         None
     ),
     screenshots: list[UploadFile] | None = File(None),
@@ -252,6 +252,32 @@ async def submit_listing(
     db: Session = Depends(get_db),
 ):
     uploaded_screenshots = screenshots or []
+
+    # --------------------------------------------------------
+    # Normalize enum inputs (DB/clients may send mixed case)
+    # --------------------------------------------------------
+    try:
+        platform_enum = Platform(platform.lower())
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid platform: '{platform}'.",
+        )
+
+    _pm_aliases = {"bank transfer": "crypto", "bank_transfer": "crypto"}
+    normalized_payment_methods: list[PaymentMethod] | None = None
+    if payment_methods is not None:
+        normalized_payment_methods = []
+        for pm in payment_methods:
+            pm_key = pm.lower()
+            pm_key = _pm_aliases.get(pm_key, pm_key)
+            try:
+                normalized_payment_methods.append(PaymentMethod(pm_key))
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid payment_method: '{pm}'.",
+                )
 
     # --------------------------------------------------------
     # Screenshot count validation
@@ -291,7 +317,7 @@ async def submit_listing(
         and resolved_username is not None
     ):
         resolved_account_url = build_profile_url(
-            platform=platform,
+            platform=platform_enum,
             username=resolved_username,
         )
 
@@ -310,7 +336,7 @@ async def submit_listing(
 
     try:
         payload = ListingCreate(
-            platform=platform,
+            platform=platform_enum,
             username=resolved_username,
             account_url=resolved_account_url,
 
@@ -365,7 +391,7 @@ async def submit_listing(
             is_promoted=is_promoted,
             is_flash_sale=is_flash_sale,
 
-            payment_methods=payment_methods or [],
+            payment_methods=normalized_payment_methods or [],
         )
 
     except ValidationError as error:
