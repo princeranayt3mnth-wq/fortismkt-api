@@ -473,10 +473,17 @@ class ReviewResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @field_validator("platform", mode="before")
+    @classmethod
+    def normalize_platform(cls, v):
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
     model_config = ConfigDict(
         from_attributes=True
     )
-    
+
 class PaginatedReviewResponse(BaseModel):
     items: list[ReviewResponse]
     total: int
