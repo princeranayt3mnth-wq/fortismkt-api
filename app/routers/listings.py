@@ -18,6 +18,7 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from websockets import route
 
 from app import crud
 from app.database import get_db
@@ -34,6 +35,7 @@ from app.schemas import (
     PaginatedListingResponse,
     PaymentMethod,
     Platform,
+    ScreenshotResponse,
 )
 
 
@@ -237,7 +239,9 @@ async def submit_listing(
     original_price_usd: Decimal | None = Form(None),
 
     # Marketplace controls
+
     is_promoted: bool = Form(False),
+    is_selling: bool = Form(False),
     is_flash_sale: bool = Form(False),
 
     # Payment methods and screenshots
@@ -253,9 +257,7 @@ async def submit_listing(
 ):
     uploaded_screenshots = screenshots or []
 
-    # --------------------------------------------------------
-    # Normalize enum inputs (DB/clients may send mixed case)
-    # --------------------------------------------------------
+   
     try:
         platform_enum = Platform(platform.lower())
     except ValueError:
@@ -359,6 +361,7 @@ async def submit_listing(
                 niche
             ),
 
+            is_selling=is_selling,
             is_monetized=is_monetized,
             average_monthly_revenue_usd=(
                 average_monthly_revenue_usd
@@ -540,6 +543,9 @@ def get_all_listings(
         default=None,
         alias="status",
     ),
+     is_selling: bool | None = Query(
+        default=None,
+    ),
     db: Session = Depends(get_db),
 ):
     items, total = crud.get_listings(
@@ -551,6 +557,7 @@ def get_all_listings(
             if listing_status
             else None
         ),
+        is_selling=is_selling,
     )
 
     return {

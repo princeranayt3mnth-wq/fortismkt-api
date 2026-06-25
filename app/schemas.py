@@ -135,6 +135,7 @@ class ListingCreate(BaseModel):
     )
 
     is_promoted: bool = False
+    is_selling: bool = False
     is_flash_sale: bool = False
 
     payment_methods: list[PaymentMethod] = Field(
@@ -265,6 +266,8 @@ account_created_date_text: str | None = Field(
 )
 
 has_original_email: bool | None = None
+
+is_selling: bool | None = None
 
 original_price_usd: Decimal | None = Field(
     default=None,

@@ -124,6 +124,13 @@ class SocialAccountListing(Base):
         server_default=text("0"),
     )
 
+    is_selling: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("0"),
+    )
+
     is_price_negotiable: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

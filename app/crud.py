@@ -3,22 +3,8 @@ from enum import Enum
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import (
-    ListingPaymentMethod,
-    SocialAccountListing,
-)
-from app.schemas import ListingCreate, ListingUpdate
-from sqlalchemy import (
-    func,
-    select,
-)
-from sqlalchemy.orm import Session
-
-from app.models import Review
-from app.schemas import (
-    ReviewCreate,
-    ReviewUpdate,
-)
+from app.models import ListingPaymentMethod, Review, SocialAccountListing
+from app.schemas import ListingCreate, ListingUpdate, ReviewCreate, ReviewUpdate
 
 def get_listing(
     db: Session,
@@ -45,12 +31,18 @@ def get_listings(
     page: int,
     page_size: int,
     status_filter: str | None = None,
+    is_selling: bool | None = None,
 ):
     filters = []
 
     if status_filter:
         filters.append(
             SocialAccountListing.status == status_filter
+        )
+    
+    if is_selling is not None:
+        filters.append(
+            SocialAccountListing.is_selling == is_selling
         )
 
     total_statement = (
